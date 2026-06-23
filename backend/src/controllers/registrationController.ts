@@ -196,7 +196,7 @@ export async function verifyAndRegister(req: Request, res: Response): Promise<vo
       email,
       {
         name: event.name,
-        dateTime: event.dateTime,
+        dateTime: event.dateTime.toISOString(),
         address: event.address,
         handler: event.handler,
         capacity: event.capacity,

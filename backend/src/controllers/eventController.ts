@@ -331,7 +331,7 @@ export async function getAllEventsReport(req: Request, res: Response): Promise<v
       .select()
       .from(schema.events)
       .where(eq(schema.events.isDeleted, false))
-      .orderBy(schema.events.dateTime);
+      .orderBy(schema.events.dateTime) as IEvent[];
 
     const reportData = await Promise.all(
       events.map(async (event) => {
