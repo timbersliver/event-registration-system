@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Table, Spin, Segmented, Progress, Button } from 'antd';
+import { Table, Spin, Segmented, Progress, Button, Tooltip } from 'antd';
 import { ArrowLeftOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { adminApi } from '../../services/api';
 import type { IOverviewReport, IRegistrationAnalytics } from '../../types/api';
@@ -110,11 +110,11 @@ function AnalyticsChart({ token, eventId }: { token: string; eventId: number }) 
           </div>
 
           {/* Line / Area Chart */}
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto flex justify-center">
             <svg
               viewBox={`0 0 ${chartW} ${chartH}`}
               className="w-full"
-              style={{ minWidth: 360, maxWidth: '100%', height: 'auto' }}
+              style={{ minWidth: 360, maxWidth: 800, height: 'auto' }}
             >
               {/* Horizontal grid lines & Y-axis labels */}
               {ySteps.map((s) => {
@@ -157,22 +157,23 @@ function AnalyticsChart({ token, eventId }: { token: string; eventId: number }) 
               {/* Data dots & tooltips */}
               {pts.map((p, i) => (
                 <g key={i}>
-                  <circle
-                    cx={toX(p, i)}
-                    cy={toY(p.count)}
-                    r={4}
-                    fill="#fff"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    className="cursor-pointer"
-                  />
-                  <title>{p.count} registrations</title>
+                  <Tooltip title={`${p.label} — ${p.count} registrations`}>
+                    <circle
+                      cx={toX(p, i)}
+                      cy={toY(p.count)}
+                      r={4}
+                      fill="#fff"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      className="cursor-pointer"
+                    />
+                  </Tooltip>
                 </g>
               ))}
 
               {/* X-axis labels */}
               {pts.map((p, i) => {
-                const skip = pts.length > 20 ? Math.ceil(pts.length / 12) : 1;
+                const skip = pts.length > 10 ? Math.ceil(pts.length / 6) : 1;
                 if (i % skip !== 0 && i !== pts.length - 1) return null;
                 return (
                   <text
