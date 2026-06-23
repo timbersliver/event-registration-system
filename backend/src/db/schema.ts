@@ -21,7 +21,6 @@ export const registrations = mysqlTable('registrations', {
   id: int('id').primaryKey().autoincrement(),
   eventId: int('event_id').notNull().references(() => events.id),
   email: varchar('email', { length: 255 }).notNull(),
-  verificationCode: varchar('verification_code', { length: 6 }).notNull(),
   isVerified: boolean('is_verified').notNull().default(false),
   isDeleted: boolean('is_deleted').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),

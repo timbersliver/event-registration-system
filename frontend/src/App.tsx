@@ -10,6 +10,7 @@ import AdminEventsPage from './pages/admin/AdminEventsPage';
 import AdminEventDetailPage from './pages/admin/AdminEventDetailPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminEventReportPage from './pages/admin/AdminEventReportPage';
+import AdminStatisticReportPage from './pages/admin/AdminStatisticReportPage';
 
 function PublicLayout() {
   return (
@@ -40,6 +41,7 @@ function App() {
         <Route path="/admin/event/:eventId" element={<AdminEventDetailPage />} />
         <Route path="/admin/report" element={<AdminReportsPage />} />
         <Route path="/admin/report/event-report" element={<AdminEventReportPage />} />
+        <Route path="/admin/report/statistic-report" element={<AdminStatisticReportPage />} />
       </Route>
     </Routes>
   );

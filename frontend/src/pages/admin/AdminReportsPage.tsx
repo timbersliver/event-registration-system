@@ -107,7 +107,7 @@ export default function AdminReportsPage() {
           </Link>
         </Col>
         <Col xs={24} md={12}>
-          <Link to="/admin/report/event-report">
+          <Link to="/admin/report/statistic-report">
             <Card
               hoverable
               className="rounded-xl shadow-sm border border-gray-100"
@@ -117,8 +117,8 @@ export default function AdminReportsPage() {
                   <BarChartOutlined className="text-green-600 text-2xl" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 text-lg">Registration Analytics</h3>
-                  <p className="text-sm text-gray-500">View registration trends and capacity usage</p>
+                  <h3 className="font-semibold text-gray-800 text-lg">Statistic Report</h3>
+                  <p className="text-sm text-gray-500">Per-event registration analytics with time-based charts</p>
                 </div>
               </div>
             </Card>

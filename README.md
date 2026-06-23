@@ -88,7 +88,7 @@ Key environment variables in `backend/.env`:
 | `REDIS_HOST` | Redis host | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `JWT_SECRET` | JWT signing secret | (change in production) |
-| `EMAIL_HOST` | SMTP host | (uses Ethereal in dev) |
+| `EMAIL_HOST` | SMTP host | (uses Mailpit in dev) |
 
 ### 3. Initialize Database
 

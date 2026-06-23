@@ -9,6 +9,7 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
+  getRegistrationAnalytics,
 } from '../controllers/eventController';
 import { authMiddleware } from '../middleware/auth';
 
@@ -34,5 +35,6 @@ router.put('/api/events/:eventId', authMiddleware, validate(updateEventSchema), 
 router.delete('/api/events/:eventId', authMiddleware, deleteEvent);
 router.get('/api/events/:eventId/report', authMiddleware, getEventReport);
 router.get('/api/reports/overview', authMiddleware, getAllEventsReport);
+router.get('/api/reports/analytics', authMiddleware, getRegistrationAnalytics);
 
 export default router;

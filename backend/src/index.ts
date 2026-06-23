@@ -47,6 +47,5 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 app.listen(PORT, () => {
   console.log(`[Server] Event Registration System backend running on http://localhost:${PORT}`);
-  console.log(`[Server] Admin UI: http://localhost:5173/admin/login`);
   console.log(`[Server] API: http://localhost:${PORT}/api/events`);
 });

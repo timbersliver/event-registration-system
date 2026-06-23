@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { IApiResponse, IPaginatedResponse, IEventReport, IOverviewReport } from '../types/api';
+import type { IApiResponse, IPaginatedResponse, IEventReport, IOverviewReport, IRegistrationAnalytics } from '../types/api';
 import type { IEventWithRegistrationCount } from '../types/event';
 import type { IVerificationResponse } from '../types/registration';
 import type { ILoginResponse } from '../types/auth';
@@ -62,6 +62,15 @@ export const adminApi = {
     api.get<IApiResponse<IOverviewReport[]>>('/admin/api/reports/overview', {
       headers: { Authorization: `Bearer ${token}` },
     }).then((r) => r.data),
+
+  getRegistrationAnalytics: (token: string, period: string, eventId?: number) => {
+    const params: Record<string, string> = { period };
+    if (eventId !== undefined) params.eventId = String(eventId);
+    return api.get<IApiResponse<IRegistrationAnalytics>>('/admin/api/reports/analytics', {
+      headers: { Authorization: `Bearer ${token}` },
+      params,
+    }).then((r) => r.data);
+  },
 };
 
 export default api;

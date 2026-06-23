@@ -4,12 +4,15 @@ import { eq, and, lt, gte, count } from 'drizzle-orm';
 import { emailService } from '../services/email';
 import { cacheService } from '../services/cache';
 
-// In-memory store for verification codes (since we don't have persistent storage for pending verifications)
-// In production, use a Redis-backed store
-const verificationStore = new Map<string, { code: string; eventId: number; expiresAt: number }>();
+const VERIFICATION_CODE_EXPIRY = 300; // 5 minutes in seconds
+const VERIFICATION_CODE_PREFIX = 'verification:';
 
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function verificationKey(email: string, eventId: number): string {
+  return `${VERIFICATION_CODE_PREFIX}${email}:${eventId}`;
 }
 
 export async function sendVerificationCode(req: Request, res: Response): Promise<void> {
@@ -40,6 +43,25 @@ export async function sendVerificationCode(req: Request, res: Response): Promise
       return;
     }
 
+    // Check if already registered
+    const [existingRegistration] = await db
+      .select({ id: schema.registrations.id })
+      .from(schema.registrations)
+      .where(
+        and(
+          eq(schema.registrations.eventId, eventId),
+          eq(schema.registrations.email, email),
+          eq(schema.registrations.isVerified, true),
+          eq(schema.registrations.isDeleted, false)
+        )
+      )
+      .limit(1);
+
+    if (existingRegistration) {
+      res.status(400).json({ success: false, message: 'You are already registered for this event' });
+      return;
+    }
+
     // Check capacity
     const [regResult] = await db
       .select({ count: count() })
@@ -57,10 +79,9 @@ export async function sendVerificationCode(req: Request, res: Response): Promise
       return;
     }
 
-    // Generate and store verification code
+    // Generate and store verification code in Redis with 5-minute expiry
     const code = generateVerificationCode();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-    verificationStore.set(`${email}:${eventId}`, { code, eventId, expiresAt });
+    await cacheService.set(verificationKey(email, eventId), { code, eventId }, VERIFICATION_CODE_EXPIRY);
 
     // Send email
     const result = await emailService.sendVerificationCode(email, code);
@@ -70,7 +91,7 @@ export async function sendVerificationCode(req: Request, res: Response): Promise
       message: 'Verification code sent to your email',
       data: {
         sent: true,
-        expiresIn: '10 minutes',
+        expiresIn: '5 minutes',
         ...(result.previewUrl ? { previewUrl: result.previewUrl } : {}),
       },
     });
@@ -102,16 +123,10 @@ export async function verifyAndRegister(req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Verify the code
-    const stored = verificationStore.get(`${email}:${eventId}`);
+    // Verify the code from Redis
+    const stored = await cacheService.get<{ code: string; eventId: number }>(verificationKey(email, eventId));
     if (!stored) {
-      res.status(400).json({ success: false, message: 'No verification code sent. Please request a new code.' });
-      return;
-    }
-
-    if (Date.now() > stored.expiresAt) {
-      verificationStore.delete(`${email}:${eventId}`);
-      res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+      res.status(400).json({ success: false, message: 'Verification Code is expired, please request a new one' });
       return;
     }
 
@@ -123,6 +138,25 @@ export async function verifyAndRegister(req: Request, res: Response): Promise<vo
     // Check deadline again
     if (new Date() > new Date(event.registrationDeadline)) {
       res.status(400).json({ success: false, message: 'Registration deadline has passed' });
+      return;
+    }
+
+    // Final check: ensure not already registered (race condition guard)
+    const [existingRegistration] = await db
+      .select({ id: schema.registrations.id })
+      .from(schema.registrations)
+      .where(
+        and(
+          eq(schema.registrations.eventId, eventId),
+          eq(schema.registrations.email, email),
+          eq(schema.registrations.isVerified, true),
+          eq(schema.registrations.isDeleted, false)
+        )
+      )
+      .limit(1);
+
+    if (existingRegistration) {
+      res.status(400).json({ success: false, message: 'You are already registered for this event' });
       return;
     }
 
@@ -147,18 +181,36 @@ export async function verifyAndRegister(req: Request, res: Response): Promise<vo
     await db.insert(schema.registrations).values({
       eventId,
       email,
-      verificationCode: code,
       isVerified: true,
     });
 
-    // Clean up verification store
-    verificationStore.delete(`${email}:${eventId}`);
+    // Clean up verification code from Redis
+    await cacheService.del(verificationKey(email, eventId));
 
     // Invalidate event cache
     await cacheService.del(`event:${eventId}`);
     await cacheService.del('events:list');
 
-    res.status(201).json({ success: true, message: 'Successfully registered for the event' });
+    // Send confirmation email (fire-and-forget — don't block response)
+    const confirmationPromise = emailService.sendConfirmation(
+      email,
+      {
+        name: event.name,
+        dateTime: event.dateTime,
+        address: event.address,
+        handler: event.handler,
+        capacity: event.capacity,
+      },
+      (regResult?.count ?? 0) + 1
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Successfully registered for the event',
+      data: {
+        previewUrl: (await confirmationPromise).previewUrl,
+      },
+    });
   } catch (err) {
     console.error('[RegistrationController] Error registering:', err);
     res.status(500).json({ success: false, message: 'Failed to complete registration' });

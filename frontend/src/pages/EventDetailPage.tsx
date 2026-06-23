@@ -22,10 +22,56 @@ import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
   MailOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { eventApi, registrationApi } from '../services/api';
 import type { IEventWithRegistrationCount } from '../types/event';
 import dayjs from 'dayjs';
+
+function generateIcsContent(event: IEventWithRegistrationCount): string {
+  const dtStart = new Date(event.dateTime);
+  const dtEnd = new Date(dtStart.getTime() + 2 * 60 * 60 * 1000);
+
+  const formatICSDate = (d: Date): string => {
+    return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  };
+
+  const escape = (str: string): string =>
+    str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//EventHub//Event Registration System//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${event.name.replace(/[^a-zA-Z0-9]/g, '-')}-${formatICSDate(dtStart)}@event-registration.com`,
+    `DTSTART:${formatICSDate(dtStart)}`,
+    `DTEND:${formatICSDate(dtEnd)}`,
+    `SUMMARY:${escape(event.name)}`,
+    `DESCRIPTION:${escape(event.description || '')}`,
+    `LOCATION:${escape(event.address)}`,
+    `ORGANIZER;CN=${escape(event.handler)}:mailto:noreply@event-registration.com`,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return lines.join('\r\n');
+}
+
+function downloadIcs(event: IEventWithRegistrationCount): void {
+  const ics = generateIcsContent(event);
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${event.name.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -62,7 +108,7 @@ export default function EventDetailPage() {
   }
 
   const isOpen = event
-    ? dayjs(event.registrationDeadline).isAfter(dayjs()) &&
+    ? dayjs(event.registrationDeadline).isAfter(dayjs(new Date())) &&
       (event.registrationCount || 0) < event.capacity
     : false;
 
@@ -76,7 +122,7 @@ export default function EventDetailPage() {
         setCurrentStep(1);
         if (response.data?.previewUrl) {
           setPreviewUrl(response.data.previewUrl);
-          message.info('📧 Since this is dev mode, check the Ethereal preview link below!');
+          message.info('📧 Since this is dev mode, check the Mailpit preview link below!');
         } else {
           message.success('Verification code sent! Check your email.');
         }
@@ -105,6 +151,15 @@ export default function EventDetailPage() {
     } finally {
       setVerifying(false);
     }
+  };
+
+  const resetRegistration = () => {
+    setCurrentStep(0);
+    setEmail('');
+    setCode('');
+    setCodeSent(false);
+    setRegistered(false);
+    setPreviewUrl(null);
   };
 
   if (loading) {
@@ -314,16 +369,15 @@ export default function EventDetailPage() {
         title={null}
         open={registerOpen}
         onCancel={() => {
+          setRegisterOpen(false);
           if (currentStep === 2) {
-            setRegisterOpen(false);
-            setCurrentStep(0);
-            setEmail('');
-            setCode('');
-            setCodeSent(false);
-            setRegistered(false);
-            setPreviewUrl(null);
-          } else {
-            setRegisterOpen(false);
+            resetRegistration();
+          }
+        }}
+        afterClose={() => {
+          // Reset form when modal finishes closing animation (covers steps 0 & 1)
+          if (currentStep !== 2) {
+            resetRegistration();
           }
         }}
         footer={null}
@@ -335,20 +389,24 @@ export default function EventDetailPage() {
           <Result
             status="success"
             title="Registration Successful!"
-            subTitle={`You have successfully registered for ${event.name}. We'll send you a reminder before the event.`}
+            subTitle={`You have successfully registered for ${event.name}. A confirmation email with iCal attachment has been sent to ${email}.`}
             extra={[
+              <Button
+                key="ics"
+                icon={<DownloadOutlined />}
+                onClick={() => downloadIcs(event)}
+                className="rounded-full"
+              >
+                Add to Calendar (.ics)
+              </Button>,
               <Button
                 type="primary"
                 key="close"
                 onClick={() => {
                   setRegisterOpen(false);
-                  setCurrentStep(0);
-                  setEmail('');
-                  setCode('');
-                  setCodeSent(false);
-                  setRegistered(false);
-                  setPreviewUrl(null);
+                  resetRegistration();
                 }}
+                className="rounded-full"
               >
                 Done
               </Button>,
@@ -422,7 +480,7 @@ export default function EventDetailPage() {
                 {previewUrl && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-xs text-blue-700 mb-1">
-                      📧 Dev mode: Email sent via Ethereal
+                      📧 Dev mode: Email sent via Mailpit
                     </p>
                     <a
                       href={previewUrl}

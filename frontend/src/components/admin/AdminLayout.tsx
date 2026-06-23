@@ -50,7 +50,7 @@ export default function AdminLayout() {
         <div className="flex items-center gap-3 p-6 border-b border-indigo-800">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-indigo-300 hover:text-white transition"
+            className="text-white hover:text-indigo-200 transition"
           >
             <MenuOutlined />
           </button>
@@ -81,14 +81,14 @@ export default function AdminLayout() {
 
         <div className="p-4 border-t border-indigo-800">
           {!collapsed && (
-            <div className="flex items-center gap-3 text-sm text-indigo-300 mb-3">
+            <div className="flex items-center gap-3 text-sm text-white/70 mb-3">
               <UserOutlined />
               <span className="truncate">{adminEmail}</span>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 text-sm text-indigo-300 hover:text-white transition w-full px-4 py-2 rounded-lg hover:bg-indigo-800"
+            className="flex items-center gap-3 text-sm text-white hover:text-indigo-200 transition w-full px-4 py-2 rounded-lg"
           >
             <LogoutOutlined />
             {!collapsed && <span>Logout</span>}

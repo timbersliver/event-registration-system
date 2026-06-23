@@ -30,3 +30,17 @@ export interface IOverviewReport {
   totalRegistrations: number;
   capacityUtilization: number;
 }
+
+export interface IRegistrationAnalyticsPoint {
+  label: string;
+  count: number;
+  timestamp: string;
+}
+
+export interface IRegistrationAnalytics {
+  period: string;
+  eventId: number | null;
+  intervalSeconds: number;
+  points: IRegistrationAnalyticsPoint[];
+  total: number;
+}

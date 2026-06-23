@@ -376,3 +376,126 @@ export async function getAllEventsReport(req: Request, res: Response): Promise<v
     res.status(500).json({ success: false, message: 'Failed to fetch report' });
   }
 }
+
+export async function getRegistrationAnalytics(req: Request, res: Response): Promise<void> {
+  try {
+    const period = (req.query.period as string) || '1d';
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
+
+    if (eventId !== undefined && isNaN(eventId)) {
+      res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return;
+    }
+
+    const validPeriods = ['1h', '1d', '1w', '1m'] as const;
+    if (!validPeriods.includes(period as typeof validPeriods[number])) {
+      res.status(400).json({ success: false, message: 'Invalid period. Use: 1h, 1d, 1w, or 1m' });
+      return;
+    }
+
+    let intervalSeconds = 0;
+    let rangeSeconds = 0;
+    let labelFormat: 'time' | 'date' = 'time';
+
+    switch (period) {
+      case '1h':
+        intervalSeconds = 600;  // 10 min
+        rangeSeconds = 3600;    // 1 hour
+        labelFormat = 'time';
+        break;
+      case '1d':
+        intervalSeconds = 7200; // 2 hours
+        rangeSeconds = 86400;   // 1 day
+        labelFormat = 'time';
+        break;
+      case '1w':
+        intervalSeconds = 86400; // 1 day
+        rangeSeconds = 604800;   // 7 days
+        labelFormat = 'date';
+        break;
+      case '1m':
+        intervalSeconds = 86400; // 1 day
+        rangeSeconds = 2592000;  // ~30 days
+        labelFormat = 'date';
+        break;
+    }
+
+    // Build the WHERE clause for event filter
+    const eventFilter = eventId !== undefined
+      ? sql`AND ${schema.registrations.eventId} = ${eventId}`
+      : sql``;
+
+    // Use raw SQL for time-based grouping with UTC epoch comparisons
+    // (timezone-independent — both SQL and gap-filling loop use Unix timestamps)
+    const query = sql`
+      SELECT
+        FLOOR(UNIX_TIMESTAMP(created_at) / ${intervalSeconds}) * ${intervalSeconds} AS interval_start,
+        COUNT(*) AS count
+      FROM registrations
+      WHERE UNIX_TIMESTAMP(created_at) >= UNIX_TIMESTAMP(UTC_TIMESTAMP()) - ${rangeSeconds}
+        AND is_deleted = false
+        AND is_verified = true
+        ${eventFilter}
+      GROUP BY interval_start
+      ORDER BY interval_start ASC
+    `;
+    console.log('query: ', query);
+
+    const [rows] = await db.execute(query) as any[];
+    const data = rows as { interval_start: number; count: number }[];
+
+    // Build a map from the DB result
+    const dataMap = new Map<number, number>();
+    for (const row of data) {
+      dataMap.set(row.interval_start, row.count);
+    }
+
+    // Build full time range with gaps filled as zero
+    const now = Math.floor(Date.now() / 1000);
+    const rangeStart = now - rangeSeconds;
+    const numIntervals = Math.ceil(rangeSeconds / intervalSeconds);
+
+    const points = [];
+    for (let i = 0; i < numIntervals; i++) {
+      const intervalStart = rangeStart + i * intervalSeconds;
+      const floored = Math.floor(intervalStart / intervalSeconds) * intervalSeconds;
+      const count = dataMap.get(floored) || 0;
+
+      const date = new Date(intervalStart * 1000);
+      let label: string;
+
+      if (labelFormat === 'time') {
+        label = date.toLocaleTimeString('en-SG', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Singapore',
+        });
+      } else {
+        label = date.toLocaleDateString('en-SG', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'Asia/Singapore',
+        });
+      }
+
+      points.push({ label, count, timestamp: date.toISOString() });
+    }
+
+    res.json({
+      success: true,
+      message: 'Analytics retrieved',
+      data: {
+        period,
+        eventId: eventId ?? null,
+        intervalSeconds,
+        points,
+        total: points.reduce((sum, p) => sum + p.count, 0),
+      },
+    });
+  } catch (err) {
+    console.error('[EventController] Error fetching analytics:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+  }
+}

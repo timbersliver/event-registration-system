@@ -10,6 +10,12 @@ const poolConnection = mysql.createPool({
   database: process.env.DB_NAME || 'event-registration',
   waitForConnections: true,
   connectionLimit: 10,
+  timezone: '+08:00',
+});
+
+// When the pool creates new connections, set the MySQL session timezone to Singapore time
+poolConnection.on('connection', (connection) => {
+  connection.query("SET time_zone = '+08:00'");
 });
 
 export const db = drizzle(poolConnection, { schema, mode: 'default' });
