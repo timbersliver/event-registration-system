@@ -112,9 +112,6 @@ EMAIL_PASS=
 ### 3. Initialize Database
 
 ```bash
-# Generate Drizzle migrations
-npm run db:generate
-
 # Push schema to MySQL
 npm run db:push
 
