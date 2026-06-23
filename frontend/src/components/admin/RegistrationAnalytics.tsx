@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Segmented, Select, Spin } from 'antd';
-import type { IRegistrationAnalytics, IRegistrationAnalyticsPoint } from '../../types/api';
+import type { IRegistrationAnalytics } from '../../types/api';
 import { adminApi } from '../../services/api';
 
 const periods = [

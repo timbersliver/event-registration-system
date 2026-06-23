@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db, schema } from '../db';
-import { eq, and, lt, gte, count } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { emailService } from '../services/email';
 import { cacheService } from '../services/cache';
 

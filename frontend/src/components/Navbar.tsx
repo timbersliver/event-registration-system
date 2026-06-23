@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Modal } from 'antd';
+import { Input } from 'antd';
 import { SearchOutlined, CalendarOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 
 export default function Navbar() {

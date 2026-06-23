@@ -1,11 +1,8 @@
 import { Request, Response } from 'express';
 import { db, schema } from '../db';
 import { eq, and, gte, like, sql, count } from 'drizzle-orm';
-import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import { cacheService } from '../services/cache';
 import type { IEvent, IEventWithRegistrationCount } from '../types/event';
-
-const mysqlDialect = new MySqlDialect();
 
 const EVENT_CACHE_PREFIX = 'event:';
 const EVENTS_LIST_CACHE_KEY = 'events:list';

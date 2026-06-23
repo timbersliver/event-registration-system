@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Table, Spin, Segmented, Progress, Button } from 'antd';
 import { ArrowLeftOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { adminApi } from '../../services/api';
-import type { IOverviewReport, IRegistrationAnalytics, IRegistrationAnalyticsPoint } from '../../types/api';
+import type { IOverviewReport, IRegistrationAnalytics } from '../../types/api';
 import dayjs from 'dayjs';
 
 const periods = [
