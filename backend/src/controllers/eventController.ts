@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
 import { db, schema } from '../db';
-import { eq, and, lt, gte, like, sql, count } from 'drizzle-orm';
+import { eq, and, gte, like, sql, count } from 'drizzle-orm';
+import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import { cacheService } from '../services/cache';
 import type { IEvent, IEventWithRegistrationCount } from '../types/event';
+
+const mysqlDialect = new MySqlDialect();
 
 const EVENT_CACHE_PREFIX = 'event:';
 const EVENTS_LIST_CACHE_KEY = 'events:list';
@@ -414,8 +417,8 @@ export async function getRegistrationAnalytics(req: Request, res: Response): Pro
         labelFormat = 'date';
         break;
       case '1m':
-        intervalSeconds = 86400; // 1 day
-        rangeSeconds = 2592000;  // ~30 days
+        intervalSeconds = 604800; // 7 days (1 week)
+        rangeSeconds = 2592000;   // ~30 days
         labelFormat = 'date';
         break;
     }
@@ -425,54 +428,63 @@ export async function getRegistrationAnalytics(req: Request, res: Response): Pro
       ? sql`AND ${schema.registrations.eventId} = ${eventId}`
       : sql``;
 
-    // Use raw SQL for time-based grouping with UTC epoch comparisons
-    // (timezone-independent — both SQL and gap-filling loop use Unix timestamps)
+    // Use TIMESTAMPDIFF + NOW() — both respect the session timezone (+08:00),
+    // so bucket_idx is always the correct age-based offset from "now".
+    //   bucket 0 = [now - intervalSeconds, now)
+    //   bucket 1 = [now - 2*intervalSeconds, now - intervalSeconds)
+    //   ...
     const query = sql`
       SELECT
-        FLOOR(UNIX_TIMESTAMP(created_at) / ${intervalSeconds}) * ${intervalSeconds} AS interval_start,
+        TIMESTAMPDIFF(SECOND, created_at, NOW()) DIV ${intervalSeconds} AS bucket_idx,
         COUNT(*) AS count
       FROM registrations
-      WHERE UNIX_TIMESTAMP(created_at) >= UNIX_TIMESTAMP(UTC_TIMESTAMP()) - ${rangeSeconds}
+      WHERE created_at >= NOW() - INTERVAL ${rangeSeconds} SECOND
         AND is_deleted = false
         AND is_verified = true
         ${eventFilter}
-      GROUP BY interval_start
-      ORDER BY interval_start ASC
+      GROUP BY bucket_idx
+      ORDER BY bucket_idx ASC
     `;
-    console.log('query: ', query);
+    const compiledQuery = mysqlDialect.sqlToQuery(query);
+    console.log('query SQL: ', compiledQuery.sql);
+    console.log('query params: ', compiledQuery.params);
 
     const [rows] = await db.execute(query) as any[];
-    const data = rows as { interval_start: number; count: number }[];
+    const data = rows as { bucket_idx: number; count: number }[];
 
-    // Build a map from the DB result
+    // Build a map from the DB result: bucket_idx → count
     const dataMap = new Map<number, number>();
     for (const row of data) {
-      dataMap.set(row.interval_start, row.count);
+      dataMap.set(Number(row.bucket_idx), Number(row.count));
     }
 
-    // Build full time range with gaps filled as zero
-    const now = Math.floor(Date.now() / 1000);
-    const rangeStart = now - rangeSeconds;
+    // Build full time range with gaps filled as zero,
+    // ordered oldest → newest (left-to-right chart order)
+    const now = new Date();
+    const nowMs = now.getTime();
     const numIntervals = Math.ceil(rangeSeconds / intervalSeconds);
 
     const points = [];
-    for (let i = 0; i < numIntervals; i++) {
-      const intervalStart = rangeStart + i * intervalSeconds;
-      const floored = Math.floor(intervalStart / intervalSeconds) * intervalSeconds;
-      const count = dataMap.get(floored) || 0;
+    for (let bucketIdx = numIntervals - 1; bucketIdx >= 0; bucketIdx--) {
+      const intervalStartMs = nowMs - (bucketIdx + 1) * intervalSeconds * 1000;
+      const intervalEndMs = nowMs - bucketIdx * intervalSeconds * 1000;
+      const count = dataMap.get(bucketIdx) || 0;
 
-      const date = new Date(intervalStart * 1000);
+      const intervalStart = new Date(intervalStartMs);
+      const intervalEnd = new Date(intervalEndMs);
       let label: string;
 
       if (labelFormat === 'time') {
-        label = date.toLocaleTimeString('en-SG', {
+        // Show the START of the bucket window (e.g. "2:58 PM" for [2:58, 3:08))
+        label = intervalStart.toLocaleTimeString('en-SG', {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true,
           timeZone: 'Asia/Singapore',
         });
       } else {
-        label = date.toLocaleDateString('en-SG', {
+        // Show the DATE the bucket ends on (e.g. "Jun 23" for today's bucket)
+        label = intervalEnd.toLocaleDateString('en-SG', {
           weekday: 'short',
           month: 'short',
           day: 'numeric',
@@ -480,7 +492,7 @@ export async function getRegistrationAnalytics(req: Request, res: Response): Pro
         });
       }
 
-      points.push({ label, count, timestamp: date.toISOString() });
+      points.push({ label, count, timestamp: intervalStart.toISOString() });
     }
 
     res.json({
