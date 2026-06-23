@@ -244,7 +244,7 @@ export default function HomePage() {
               Our admin portal lets you create, manage, and track events with detailed registration reports.
             </p>
             <a
-              href="http://localhost:3001/admin/login"
+              href="http://localhost:6229/admin/login"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-3 rounded-full font-medium hover:bg-primary-700 transition"

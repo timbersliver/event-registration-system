@@ -83,10 +83,10 @@ Key environment variables in `backend/.env`:
 
 ```env
 # Backend server port
-PORT=3001
+PORT=6229
 
 # CORS allowed origin
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:6230
 
 # MySQL database
 DB_HOST=localhost
@@ -129,23 +129,23 @@ npm run db:studio
 npm run dev
 
 # Or run them separately:
-npm run dev:backend   # Backend on http://localhost:3001
-npm run dev:frontend  # Frontend on http://localhost:5173
+npm run dev:backend   # Backend on http://localhost:6229
+npm run dev:frontend  # Frontend on http://localhost:6230
 ```
 
 ### 5. Access the Application
 
 | Page | URL | Description |
 |------|-----|-------------|
-| **Public Home** | http://localhost:5173 | Event discovery & listing |
-| **Event Detail** | http://localhost:5173/event/:id | Event details, registration & calendar download |
-| **Admin Login** | http://localhost:5173/admin/login | Admin portal login |
-| **Admin Dashboard** | http://localhost:5173/admin | Dashboard with event/registration stats |
-| **Admin Events** | http://localhost:5173/admin/event | Event CRUD management |
-| **Admin Event Detail** | http://localhost:5173/admin/event/:id | Single event report & capacity |
-| **Admin Reports** | http://localhost:5173/admin/report | Reports overview & navigation |
-| **Admin Event Report** | http://localhost:5173/admin/report/event-report | Detailed table with utilization bars |
-| **Admin Stat Report** | http://localhost:5173/admin/report/statistic-report | SVG line chart analytics |
+| **Public Home** | http://localhost:6230 | Event discovery & listing |
+| **Event Detail** | http://localhost:6230/event/:id | Event details, registration & calendar download |
+| **Admin Login** | http://localhost:6230/admin/login | Admin portal login |
+| **Admin Dashboard** | http://localhost:6230/admin | Dashboard with event/registration stats |
+| **Admin Events** | http://localhost:6230/admin/event | Event CRUD management |
+| **Admin Event Detail** | http://localhost:6230/admin/event/:id | Single event report & capacity |
+| **Admin Reports** | http://localhost:6230/admin/report | Reports overview & navigation |
+| **Admin Event Report** | http://localhost:6230/admin/report/event-report | Detailed table with utilization bars |
+| **Admin Stat Report** | http://localhost:6230/admin/report/statistic-report | SVG line chart analytics |
 | **Mailpit UI** | http://localhost:8025 | Dev email preview (if running) |
 
 ## Admin Credentials (Mock Data)
@@ -382,8 +382,8 @@ The data is rendered as an **SVG line/area chart** on the Statistic Report page 
 ### Backend (`backend/.env`)
 
 ```bash
-PORT=3001
-FRONTEND_URL=http://localhost:5173
+PORT=6229
+FRONTEND_URL=http://localhost:6230
 
 DB_HOST=localhost
 DB_PORT=3306
@@ -405,5 +405,5 @@ EMAIL_PASS=
 ### Frontend (`frontend/.env`)
 
 ```bash
-VITE_API_BASE_URL=http://localhost:3001
+VITE_API_BASE_URL=http://localhost:6229
 ```

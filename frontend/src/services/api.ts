@@ -5,7 +5,7 @@ import type { IVerificationResponse } from '../types/registration';
 import type { ILoginResponse } from '../types/auth';
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}`,
+  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:6229'}`,
   headers: {
     'Content-Type': 'application/json',
   },

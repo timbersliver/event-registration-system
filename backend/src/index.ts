@@ -8,11 +8,11 @@ import eventRoutes from './routes/eventRoutes';
 import adminRoutes from './routes/adminRoutes';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 6229;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:6230',
   credentials: true,
 }));
 app.use(express.json());

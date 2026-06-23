@@ -4,14 +4,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 6230,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:6229',
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:6229',
         changeOrigin: true,
         bypass: (req) => {
           // Only proxy admin API routes; serve admin page routes from SPA
