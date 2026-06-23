@@ -39,6 +39,50 @@ function AnalyticsChart({ token, eventId }: { token: string; eventId: number }) 
 
   const maxCount = data ? Math.max(...data.points.map((p) => p.count), 1) : 1;
 
+  /** Compute nice Y-axis scale steps */
+  function getScaleSteps(max: number): { step: number; steps: number[] } {
+    if (max <= 0) return { step: 1, steps: [0] };
+    const roughStep = max / 5;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+    let niceStep: number;
+    if (normalized <= 1.5) niceStep = 1;
+    else if (normalized <= 3.5) niceStep = 2;
+    else if (normalized <= 7.5) niceStep = 5;
+    else niceStep = 10;
+    const step = niceStep * magnitude;
+    const steps: number[] = [];
+    for (let i = 0; i * step <= max + step / 2; i++) {
+      steps.push(i * step);
+    }
+    return { step, steps };
+  }
+
+  const { steps: ySteps } = getScaleSteps(maxCount);
+  const yMax = ySteps[ySteps.length - 1] || 1;
+
+  // Chart dimensions
+  const chartW = 600;
+  const chartH = 220;
+  const pad = { top: 16, right: 16, bottom: 40, left: 44 };
+  const plotW = chartW - pad.left - pad.right;
+  const plotH = chartH - pad.top - pad.bottom;
+
+  // Build SVG path for the area (transparent fill) and line
+  const pts = data?.points ?? [];
+  const toX = (_: unknown, i: number) =>
+    pad.left + (pts.length > 1 ? (i / (pts.length - 1)) * plotW : plotW / 2);
+  const toY = (v: number) => pad.top + plotH - (v / yMax) * plotH;
+
+  const linePath = pts
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p, i).toFixed(1)},${toY(p.count).toFixed(1)}`)
+    .join(' ');
+
+  const areaPath =
+    linePath +
+    ` L${toX(pts[pts.length - 1], pts.length - 1).toFixed(1)},${pad.top + plotH}` +
+    ` L${toX(pts[0], 0).toFixed(1)},${pad.top + plotH} Z`;
+
   return (
     <div className="py-4">
       <div className="mb-4 max-w-md mx-auto">
@@ -65,36 +109,84 @@ function AnalyticsChart({ token, eventId }: { token: string; eventId: number }) 
             </span>
           </div>
 
-          <div className="relative" style={{ height: 180 }}>
-            <div className="absolute inset-0 flex items-end gap-[2px] px-2">
-              {data.points.map((point, i) => {
-                const height = Math.max((point.count / maxCount) * 100, point.count > 0 ? 4 : 0);
+          {/* Line / Area Chart */}
+          <div className="relative overflow-x-auto">
+            <svg
+              viewBox={`0 0 ${chartW} ${chartH}`}
+              className="w-full"
+              style={{ minWidth: 360, maxWidth: '100%', height: 'auto' }}
+            >
+              {/* Horizontal grid lines & Y-axis labels */}
+              {ySteps.map((s) => {
+                const y = toY(s);
                 return (
-                  <div
-                    key={i}
-                    className="flex-1 flex flex-col items-center justify-end h-full group relative"
-                  >
-                    <div
-                      className="w-full rounded-t bg-indigo-500 hover:bg-indigo-600 transition-all cursor-pointer"
-                      style={{ height: `${height}%`, minHeight: point.count > 0 ? '4px' : '0' }}
+                  <g key={s}>
+                    <line
+                      x1={pad.left}
+                      y1={y}
+                      x2={chartW - pad.right}
+                      y2={y}
+                      stroke="#e5e7eb"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={pad.left - 6}
+                      y={y + 4}
+                      textAnchor="end"
+                      className="text-[11px] fill-gray-400"
                     >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                        {point.count} registrations
-                      </div>
-                    </div>
-                    <span className="text-[9px] text-gray-400 mt-1 truncate w-full text-center leading-tight">
-                      {point.label}
-                    </span>
-                  </div>
+                      {s}
+                    </text>
+                  </g>
                 );
               })}
-            </div>
-          </div>
 
-          <div className="flex justify-between text-xs text-gray-400 mt-1 px-2">
-            <span>0</span>
-            <span>{Math.round(maxCount / 2)}</span>
-            <span>{maxCount}</span>
+              {/* Area fill */}
+              <path d={areaPath} fill="rgba(99,102,241,0.12)" />
+
+              {/* Line */}
+              <path
+                d={linePath}
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+
+              {/* Data dots & tooltips */}
+              {pts.map((p, i) => (
+                <g key={i}>
+                  <circle
+                    cx={toX(p, i)}
+                    cy={toY(p.count)}
+                    r={4}
+                    fill="#fff"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    className="cursor-pointer"
+                  />
+                  <title>{p.count} registrations</title>
+                </g>
+              ))}
+
+              {/* X-axis labels */}
+              {pts.map((p, i) => {
+                const skip = pts.length > 20 ? Math.ceil(pts.length / 12) : 1;
+                if (i % skip !== 0 && i !== pts.length - 1) return null;
+                return (
+                  <text
+                    key={i}
+                    x={toX(p, i)}
+                    y={chartH - 6}
+                    textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}
+                    className="text-[10px] fill-gray-400"
+                  >
+                    {p.label}
+                  </text>
+                );
+              })}
+            </svg>
           </div>
         </div>
       ) : (

@@ -445,9 +445,11 @@ export async function getRegistrationAnalytics(req: Request, res: Response): Pro
       GROUP BY bucket_idx
       ORDER BY bucket_idx ASC
     `;
-    const compiledQuery = mysqlDialect.sqlToQuery(query);
-    console.log('query SQL: ', compiledQuery.sql);
-    console.log('query params: ', compiledQuery.params);
+
+    // Debug purposes - log the generated SQL and params
+    // const compiledQuery = mysqlDialect.sqlToQuery(query);
+    // console.log('query SQL: ', compiledQuery.sql);
+    // console.log('query params: ', compiledQuery.params);
 
     const [rows] = await db.execute(query) as any[];
     const data = rows as { bucket_idx: number; count: number }[];
