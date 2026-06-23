@@ -8,6 +8,7 @@ import {
   UserOutlined,
   MenuOutlined,
 } from '@ant-design/icons';
+import { Button } from 'antd';
 
 const navItems = [
   { path: '/admin', icon: <DashboardOutlined />, label: 'Dashboard' },
@@ -47,17 +48,17 @@ export default function AdminLayout() {
           collapsed ? 'w-16' : 'w-64'
         } bg-indigo-900 text-white flex flex-col transition-all duration-200 fixed h-full z-30`}
       >
-        <div className="flex items-center gap-3 p-6 border-b border-indigo-800">
-          <button
+        <div className="flex items-center gap-0 py-6 px-3 border-b border-indigo-800">
+          <Button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-white hover:text-indigo-200 transition"
+            type='text'
           >
-            <MenuOutlined />
-          </button>
+            <MenuOutlined className='text-white' />
+          </Button>
           {!collapsed && (
             <div>
-              <h2 className="font-bold text-lg">ERS</h2>
-              <p className="text-xs text-indigo-300">Event Registration</p>
+              <div className="font-bold text-lg">ERS</div>
+              <div className="text-xs text-indigo-300">Event Registration</div>
             </div>
           )}
         </div>
@@ -81,18 +82,20 @@ export default function AdminLayout() {
 
         <div className="p-4 border-t border-indigo-800">
           {!collapsed && (
-            <div className="flex items-center gap-3 text-sm text-white/70 mb-3">
+            <div className="flex items-center gap-3 text-sm text-indigo-300 mb-3">
               <UserOutlined />
               <span className="truncate">{adminEmail}</span>
             </div>
           )}
-          <button
+          <Button
             onClick={handleLogout}
-            className="flex items-center gap-3 text-sm text-white hover:text-indigo-200 transition w-full px-4 py-2 rounded-lg"
+            color="danger" 
+            variant="solid"
+            className='w-full'
           >
             <LogoutOutlined />
             {!collapsed && <span>Logout</span>}
-          </button>
+          </Button>
         </div>
       </aside>
 
