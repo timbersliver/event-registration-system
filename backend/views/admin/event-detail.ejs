@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Details - Event Registration System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="fixed left-0 top-0 h-full w-64 bg-indigo-900 text-white p-6">
+    <div class="flex items-center gap-3 mb-10">
+      <i class="fas fa-calendar-alt text-2xl"></i>
+      <div>
+        <h2 class="font-bold text-lg">ERS</h2>
+        <p class="text-xs text-indigo-300">Event Registration</p>
+      </div>
+    </div>
+    <nav class="space-y-2">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 text-indigo-200 hover:bg-indigo-800 rounded-lg transition">
+        <i class="fas fa-chart-pie"></i> Dashboard
+      </a>
+      <a href="/admin/event" class="flex items-center gap-3 px-4 py-3 bg-indigo-800 rounded-lg text-white">
+        <i class="fas fa-calendar-plus"></i> Events
+      </a>
+      <a href="/admin/report" class="flex items-center gap-3 px-4 py-3 text-indigo-200 hover:bg-indigo-800 rounded-lg transition">
+        <i class="fas fa-file-alt"></i> Reports
+      </a>
+    </nav>
+    <div class="absolute bottom-6 left-6 right-6">
+      <button onclick="handleLogout()" class="flex items-center gap-3 text-sm text-indigo-300 hover:text-white transition">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <div class="ml-64 p-8">
+    <a href="/admin/event" class="text-indigo-600 hover:text-indigo-800 mb-4 inline-block">
+      <i class="fas fa-arrow-left"></i> Back to Events
+    </a>
+    
+    <div id="eventDetail" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="text-center py-8 text-gray-400">
+        <i class="fas fa-spinner fa-spin text-2xl"></i>
+        <p class="mt-2">Loading event details...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('adminToken');
+    if (!token) window.location.href = '/admin/login';
+    
+    const eventId = '<%= eventId %>';
+    const API_BASE = '/admin/api';
+
+    async function loadEventDetail() {
+      try {
+        const res = await fetch(`${API_BASE}/events/${eventId}/report`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          renderEventDetail(data.data);
+        } else {
+          document.getElementById('eventDetail').innerHTML = '<div class="text-center py-8 text-red-500">Event not found</div>';
+        }
+      } catch (err) {
+        document.getElementById('eventDetail').innerHTML = '<div class="text-center py-8 text-red-500">Failed to load event</div>';
+      }
+    }
+
+    function renderEventDetail(report) {
+      const event = report.event;
+      const eventDate = new Date(event.dateTime);
+      const deadline = new Date(event.registrationDeadline);
+      
+      document.getElementById('eventDetail').innerHTML = `
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">${event.name}</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm text-gray-500">Description</label>
+              <p class="text-gray-800">${event.description || 'No description'}</p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-500">Date & Time</label>
+              <p class="text-gray-800">${eventDate.toLocaleString()}</p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-500">Address</label>
+              <p class="text-gray-800">${event.address}</p>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm text-gray-500">Registration Deadline</label>
+              <p class="text-gray-800">${deadline.toLocaleString()}</p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-500">Handler</label>
+              <p class="text-gray-800">${event.handler}</p>
+            </div>
+            <div>
+              <label class="text-sm text-gray-500">Capacity</label>
+              <p class="text-gray-800">${event.capacity}</p>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Registration Statistics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-indigo-600">${report.totalRegistrations}</p>
+            <p class="text-sm text-gray-600">Total</p>
+          </div>
+          <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-green-600">${report.verifiedRegistrations}</p>
+            <p class="text-sm text-gray-600">Verified</p>
+          </div>
+          <div class="bg-orange-50 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-orange-600">${report.pendingRegistrations}</p>
+            <p class="text-sm text-gray-600">Pending</p>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-blue-600">${report.capacityUtilization}%</p>
+            <p class="text-sm text-gray-600">Capacity Used</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminEmail');
+      window.location.href = '/admin/login';
+    }
+
+    loadEventDetail();
+  </script>
+</body>
+</html>

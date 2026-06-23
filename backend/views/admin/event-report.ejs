@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Reports - Event Registration System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="fixed left-0 top-0 h-full w-64 bg-indigo-900 text-white p-6">
+    <div class="flex items-center gap-3 mb-10">
+      <i class="fas fa-calendar-alt text-2xl"></i>
+      <div>
+        <h2 class="font-bold text-lg">ERS</h2>
+        <p class="text-xs text-indigo-300">Event Registration</p>
+      </div>
+    </div>
+    <nav class="space-y-2">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 text-indigo-200 hover:bg-indigo-800 rounded-lg transition">
+        <i class="fas fa-chart-pie"></i> Dashboard
+      </a>
+      <a href="/admin/event" class="flex items-center gap-3 px-4 py-3 text-indigo-200 hover:bg-indigo-800 rounded-lg transition">
+        <i class="fas fa-calendar-plus"></i> Events
+      </a>
+      <a href="/admin/report" class="flex items-center gap-3 px-4 py-3 bg-indigo-800 rounded-lg text-white">
+        <i class="fas fa-file-alt"></i> Reports
+      </a>
+    </nav>
+    <div class="absolute bottom-6 left-6 right-6">
+      <button onclick="handleLogout()" class="flex items-center gap-3 text-sm text-indigo-300 hover:text-white transition">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <div class="ml-64 p-8">
+    <a href="/admin/report" class="text-indigo-600 hover:text-indigo-800 mb-4 inline-block">
+      <i class="fas fa-arrow-left"></i> Back to Reports
+    </a>
+    
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Event Reports</h1>
+      <p class="text-gray-500 mt-1">Detailed registration report for all events</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-50 text-left">
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Event Name</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Date</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Handler</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Capacity</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Verified</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Pending</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Total</th>
+              <th class="px-6 py-3 text-sm font-semibold text-gray-600">Utilization</th>
+            </tr>
+          </thead>
+          <tbody id="reportTableBody" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="8" class="px-6 py-8 text-center text-gray-400">Loading reports...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('adminToken');
+    if (!token) window.location.href = '/admin/login';
+
+    async function loadReports() {
+      try {
+        const res = await fetch('/admin/api/reports/overview', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          renderReports(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to load reports', err);
+      }
+    }
+
+    function renderReports(reports) {
+      const tbody = document.getElementById('reportTableBody');
+      if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-400">No events found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = reports.map(report => {
+        const eventDate = new Date(report.dateTime);
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4">
+              <a href="/admin/event/${report.id}" class="font-medium text-indigo-600 hover:text-indigo-800">
+                ${report.name}
+              </a>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600">${eventDate.toLocaleDateString()}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${report.handler}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${report.capacity}</td>
+            <td class="px-6 py-4 text-sm text-green-600 font-medium">${report.verifiedRegistrations}</td>
+            <td class="px-6 py-4 text-sm text-orange-600 font-medium">${report.pendingRegistrations}</td>
+            <td class="px-6 py-4 text-sm font-medium">${report.totalRegistrations}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: ${report.capacityUtilization}%"></div>
+                </div>
+                <span class="text-sm text-gray-600">${report.capacityUtilization}%</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminEmail');
+      window.location.href = '/admin/login';
+    }
+
+    loadReports();
+  </script>
+</body>
+</html>
