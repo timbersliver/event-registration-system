@@ -13,8 +13,6 @@ const PORT = process.env.PORT || 6229;
 // Middleware
 const allowedOrigins = [
     'http://localhost:6230',
-    'http://localhost:5173',
-    /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/,
 ];
 app.use(cors({
     origin: (origin, callback) => {
