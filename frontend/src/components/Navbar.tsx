@@ -52,12 +52,6 @@ export default function Navbar() {
               <UserOutlined className="mr-1" />
               About
             </Link>
-            <Link
-              to="/admin/login"
-              className="bg-indigo-600 text-white hover:text-white hover:bg-indigo-700 font-medium text-sm px-4 py-2 rounded-full transition-colors"
-            >
-              Admin Portal
-            </Link>
           </div>
         </div>
       </div>
