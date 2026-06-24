@@ -2,53 +2,6 @@
 
 A full-stack event registration system with an admin portal and public-facing event discovery, registration, and analytics interface.
 
-## Architecture Overview
-
-```
-event-registration-system/
-├── frontend/            # Vite + React 18 + TypeScript + Tailwind + Ant Design
-│   └── src/
-│       ├── types/       # TypeScript interface definitions (.d.ts)
-│       ├── pages/       # Public-facing pages (Home, Event Detail)
-│       │   └── admin/   # Admin SPA pages (Login, Dashboard, Events, Reports, Analytics)
-│       ├── components/  # Shared components (Navbar, Footer, AdminLayout)
-│       │   └── admin/   # Admin-specific components (RegistrationAnalytics chart)
-│       └── services/    # Axios API client (eventApi, registrationApi, adminApi)
-├── backend/             # Express + TypeScript + Drizzle + MySQL + Redis + Zod
-│   └── src/
-│       ├── types/       # TypeScript interface definitions (.d.ts)
-│       ├── db/          # Drizzle schema and database connection
-│       ├── services/    # Business logic (validation, cache, email, auth)
-│       ├── controllers/ # Request handlers (events + registrations)
-│       ├── routes/      # Express route definitions (public + admin)
-│       └── middleware/  # JWT auth and Zod validation middleware
-├── drizzle/             # Auto-generated Drizzle migration files
-└── package.json         # Root scripts (concurrently runs both services)
-```
-
-## Tech Stack
-
-### Frontend (SPA)
-- **Vite 5** - Build tool
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Tailwind CSS 3** - Utility-first CSS
-- **Ant Design 5** - UI component library
-- **React Router 6** - Client-side routing
-- **Axios** - HTTP client
-- **dayjs** - Date formatting
-
-### Backend (API)
-- **Express 4** - Web framework
-- **TypeScript** - Type safety
-- **Drizzle ORM** - Database ORM (MySQL)
-- **MySQL 8** - Relational database
-- **Redis** - Caching layer (graceful degradation)
-- **Zod** - Request validation
-- **JWT** - Authentication
-- **Nodemailer** - Email service (Mailpit in dev)
-- **EJS** - Server-side admin page rendering
-
 ## Prerequisites
 
 - **Node.js** >= 18
@@ -151,6 +104,53 @@ npm run dev:frontend  # Frontend on http://localhost:6230
 |-------|-------|
 | Email | `admin@erm.com` |
 | Password | `12345678` |
+
+## Architecture Overview
+
+```
+event-registration-system/
+├── frontend/            # Vite + React 18 + TypeScript + Tailwind + Ant Design
+│   └── src/
+│       ├── types/       # TypeScript interface definitions (.d.ts)
+│       ├── pages/       # Public-facing pages (Home, Event Detail)
+│       │   └── admin/   # Admin SPA pages (Login, Dashboard, Events, Reports, Analytics)
+│       ├── components/  # Shared components (Navbar, Footer, AdminLayout)
+│       │   └── admin/   # Admin-specific components (RegistrationAnalytics chart)
+│       └── services/    # Axios API client (eventApi, registrationApi, adminApi)
+├── backend/             # Express + TypeScript + Drizzle + MySQL + Redis + Zod
+│   └── src/
+│       ├── types/       # TypeScript interface definitions (.d.ts)
+│       ├── db/          # Drizzle schema and database connection
+│       ├── services/    # Business logic (validation, cache, email, auth)
+│       ├── controllers/ # Request handlers (events + registrations)
+│       ├── routes/      # Express route definitions (public + admin)
+│       └── middleware/  # JWT auth and Zod validation middleware
+├── drizzle/             # Auto-generated Drizzle migration files
+└── package.json         # Root scripts (concurrently runs both services)
+```
+
+## Tech Stack
+
+### Frontend (SPA)
+- **Vite 5** - Build tool
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Tailwind CSS 3** - Utility-first CSS
+- **Ant Design 5** - UI component library
+- **React Router 6** - Client-side routing
+- **Axios** - HTTP client
+- **dayjs** - Date formatting
+
+### Backend (API)
+- **Express 4** - Web framework
+- **TypeScript** - Type safety
+- **Drizzle ORM** - Database ORM (MySQL)
+- **MySQL 8** - Relational database
+- **Redis** - Caching layer (graceful degradation)
+- **Zod** - Request validation
+- **JWT** - Authentication
+- **Nodemailer** - Email service (Mailpit in dev)
+- **EJS** - Server-side admin page rendering
 
 ## Features
 

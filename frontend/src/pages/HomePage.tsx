@@ -190,7 +190,7 @@ export default function HomePage() {
                       <div className="h-32 bg-gradient-to-br from-primary-500 to-indigo-700 p-6 flex items-end">
                         <div>
                           <p className="text-primary-100 text-sm font-medium">
-                            {dayjs(event.dateTime).format('ddd, MMM D')}
+                            {dayjs(event.dateTime).format('MMMM D, YYYY (dddd)')}
                           </p>
                           <h3 className="text-white font-bold text-lg leading-tight mt-1">
                             {event.name}
